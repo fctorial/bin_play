@@ -23,11 +23,8 @@
                                        [:load_addr u32]
                                        [:load_end_addr u32]
                                        [:bss_end_addr u32]
-                                       [:entry_addr u32]
-                                       [:mode_type u32]
-                                       [:width u32]
-                                       [:height u32]
-                                       [:depth u32]]}
+
+                                       ]}
                          mb_header))
 
 (def off2 (->> (range (- (count mb) 4))

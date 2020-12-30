@@ -178,3 +178,7 @@
 (defn disja
   ([m k] (vec (filter #(not= (first %) k) m)))
   ([m k & ks] (reduce (fn [res k] (disja res k)) m (cons k ks))))
+
+(defn map-vals [f m]
+  (into {}
+        (map (fn [[k v]] [k (f v)]) m)))
