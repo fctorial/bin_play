@@ -74,6 +74,13 @@
                                               :to to))
                           (zbi_align to))))))
 
+(def cmdline (deserialize {:type    :string
+                           :bytes   (get-in headers [:ZBI_TYPE_CMDLINE :length])
+                           :adapter trim-nulls-end}
+                          (ROVec. zbi (get-in headers
+                                              [:ZBI_TYPE_CMDLINE :from]
+                                              [:ZBI_TYPE_CMDLINE :to]))))
+
 (def kernel_header (deserialize {:type       :struct
                                  :definition [[:entry u64]
                                               [:reserve u64]]}
