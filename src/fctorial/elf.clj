@@ -20,16 +20,16 @@
              [[] data]
              definition)))
 
-(def data mb)
+(def data obj)
 
 (defn sech->blob [all sech]
   (ROVec. all (sech :sh_offset) (+ (sech :sh_offset)
                                    (sech :sh_size))))
-(def ElfAddr u32)
+(def ElfAddr u64)
 (def ElfHalf u16)
-(def ElfOff u32)
+(def ElfOff u64)
 (def ElfWord u32)
-(def ElfXword u32)
+(def ElfXword u64)
 
 (def elf_header {:type       :struct
                  :definition [[:ident {:type  :string
@@ -71,70 +71,70 @@
                       :element prog_header}
                      (ROVec. data (header :phoff))))
 
-;(def sec_header {:type       :struct
-;                 :definition [[:sh_name ElfWord]
-;                              [:sh_type ElfWord]
-;                              [:sh_flags (assoc ElfXword :adapter to-flags)]
-;                              [:sh_addr ElfAddr]
-;                              [:sh_offset ElfOff]
-;                              [:sh_size ElfXword]
-;                              [:sh_link ElfWord]
-;                              [:sh_info ElfWord]
-;                              [:sh_addralign ElfXword]
-;                              [:sh_entsize ElfXword]]
-;                 :adapter    #(into {} %)})
-;
-;(def _sechs (deserialize {:type    :array
-;                          :len     (header :e_shnum)
-;                          :element sec_header
-;
-;                          :adapter vec}
-;                         (ROVec. data (header :e_shoff))))
-;
-;
-;(let [sec_strtbl (nth _sechs (header :e_shstrndx))
-;      bs (sech->blob data sec_strtbl)]
-;  (def secnames_blob bs))
-;(def sec_types [:NULL :PROGBITS :SYMTAB :STRTAB :RELA :HASH :DYNAMIC :NOTE :NOBITS :REL :SHLIB :DYNSYM])
-;(def sechs (mapv
-;             (fn [e]
-;               (-> e
-;                   (dissoc :blob)
-;                   (update :sh_name (fn [loc]
-;                                      (new String (byte-array
-;                                                    (take-while #(not= % (byte 0))
-;                                                                (ROVec. secnames_blob loc))))))
-;                   (update :sh_type sec_types)))
-;             _sechs))
-;
-;(def name->sech (map-vals first (group-by :sh_name sechs)))
-;
-;(let [sec_strtbl (nth _sechs (dec (header :e_shstrndx)))
-;      bs (sech->blob data sec_strtbl)]
-;  (def obj_symnames_blob bs))
-;
-;(def sym_entry {:type       :struct
-;                :definition [[:name (assoc ElfWord :adapter
-;                                                   (fn [loc]
-;                                                     (new String (byte-array
-;                                                                   (take-while #(not= % (byte 0))
-;                                                                               (ROVec. obj_symnames_blob loc))))))]
-;                             [:info i8]
-;                             (padding 1)
-;                             [:shndx (assoc ElfHalf :adapter
-;                                                    (fn [idx]
-;                                                      [(get-in sechs [(int idx) :sh_name]) idx]))]
-;                             [:value ElfAddr]
-;                             [:size ElfXword]]})
-;
-;(def sech_symtbl (first (filter #(= :SYMTAB (% :sh_type)) sechs)))
-;
-;(def symtbl (deserialize
-;              {:type    :array
-;               :len     (/ (sech_symtbl :sh_size)
-;                           (sech_symtbl :sh_entsize))
-;               :element sym_entry
-;               :adapter vec}
-;              (sech->blob data sech_symtbl)))
-;
-;(def exec_header (deserialize elf_header exec))
+(def sec_header {:type       :struct
+                 :definition [[:sh_name ElfWord]
+                              [:sh_type ElfWord]
+                              [:sh_flags (assoc ElfXword :adapter to-flags)]
+                              [:sh_addr ElfAddr]
+                              [:sh_offset ElfOff]
+                              [:sh_size ElfXword]
+                              [:sh_link ElfWord]
+                              [:sh_info ElfWord]
+                              [:sh_addralign ElfXword]
+                              [:sh_entsize ElfXword]]
+                 :adapter    #(into {} %)})
+
+(def _sechs (deserialize {:type    :array
+                          :len     (header :shnum)
+                          :element sec_header
+
+                          :adapter vec}
+                         (ROVec. data (header :shoff))))
+
+
+(let [sec_strtbl (nth _sechs (header :shstrndx))
+      bs (sech->blob data sec_strtbl)]
+  (def secnames_blob bs))
+(def sec_types [:NULL :PROGBITS :SYMTAB :STRTAB :RELA :HASH :DYNAMIC :NOTE :NOBITS :REL :SHLIB :DYNSYM])
+(def sechs (mapv
+             (fn [e]
+               (-> e
+                   (dissoc :blob)
+                   (update :sh_name (fn [loc]
+                                      (new String (byte-array
+                                                    (take-while #(not= % (byte 0))
+                                                                (ROVec. secnames_blob loc))))))
+                   (update :sh_type sec_types)))
+             _sechs))
+
+(def name->sech (map-vals first (group-by :sh_name sechs)))
+
+(let [sec_strtbl (nth _sechs (dec (header :shstrndx)))
+      bs (sech->blob data sec_strtbl)]
+  (def obj_symnames_blob bs))
+
+(def sym_entry {:type       :struct
+                :definition [[:name (assoc ElfWord :adapter
+                                                   (fn [loc]
+                                                     (new String (byte-array
+                                                                   (take-while #(not= % (byte 0))
+                                                                               (ROVec. obj_symnames_blob loc))))))]
+                             [:info i8]
+                             (padding 1)
+                             [:shndx (assoc ElfHalf :adapter
+                                                    (fn [idx]
+                                                      [(get-in sechs [(int idx) :sh_name]) idx]))]
+                             [:value ElfAddr]
+                             [:size ElfXword]]})
+
+(def sech_symtbl (first (filter #(= :SYMTAB (% :sh_type)) sechs)))
+
+(def symtbl (deserialize
+              {:type    :array
+               :len     (/ (sech_symtbl :sh_size)
+                           (sech_symtbl :sh_entsize))
+               :element sym_entry
+               :adapter vec}
+              (sech->blob data sech_symtbl)))
+
+(def exec_header (deserialize elf_header exec))
