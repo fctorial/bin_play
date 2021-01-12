@@ -1,6 +1,4 @@
-import clojure.lang.*;
-
-import java.util.List;
+package clojure.lang;
 
 public class ROVec implements IPersistentList, IReduce, Counted, Indexed, ISeq {
     public static final byte[] empty_arr = new byte[0];
@@ -115,7 +113,7 @@ public class ROVec implements IPersistentList, IReduce, Counted, Indexed, ISeq {
     }
 
     public String toString() {
-        return String.format("ROVec([B(%d), %d, %d)", this.arr.length, this.start, this.end);
+        return String.format("clojure.lang.ROVec([B(%d), %d, %d)", this.arr.length, this.start, this.end);
     }
 
     @Override

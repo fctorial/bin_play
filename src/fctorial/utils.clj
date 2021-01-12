@@ -1,6 +1,7 @@
 (ns fctorial.utils
   (:require [clojure.core.async :as async :refer [<! >! <!! >!! go-loop chan close!]]
-            [clojure.set :refer :all]))
+            [clojure.set :refer :all])
+  (:import (clojure.lang BigInt)))
 
 (defn zip-colls [& cs]
   (partition (count cs)
@@ -158,16 +159,21 @@
       res
       (recur (* res a) (dec left)))))
 
-(defn to-flags [n]
-  (for [i (range 63)
-        :when (not= 0 (bit-and n (pow 2 i)))]
-    i))
+(defn to-flags
+  ([n] (to-flags n 0))
+  ([n off]
+   (if (= (class n) clojure.lang.BigInt)
+     (to-flags (.-lpart n) off)
+     (for [i (range 64)
+           :when (not= 0 (bit-and n (bit-shift-left 1 i)))]
+       (+ i off)))))
+(to-flags 1N)
 
 (defn geta [m k]
   (second (first (filter
-            (fn [[K _]]
-              (= K k))
-            m))))
+                   (fn [[K _]]
+                     (= K k))
+                   m))))
 
 (defn assoca [m k v]
   (let [idx (first (filter (range #(= (first %) k) (count m))))]
