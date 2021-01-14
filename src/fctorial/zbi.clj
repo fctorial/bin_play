@@ -4,7 +4,7 @@
             [parse_struct.deserialize :refer [_deserialize]]
             [fctorial.utils :refer :all]
             [fctorial.data :refer :all])
-  (:import ROVec))
+  (:import clojure.lang.ROVec))
 
 (def ZBI_TYPES {0x544f4f42 :ZBI_TYPE_CONTAINER
                 0x004e524b :ZBI_TYPE_KERNEL_PREFIX

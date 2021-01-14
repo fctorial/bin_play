@@ -6,5 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [fctorial/parse_struct "0.8.0"]
                  [org.clojure/core.async "1.3.610"]]
+  :profiles {:reveal {:dependencies [[vlaaad/reveal "1.2.186"]]
+                      :repl-options {:init-ns fctorial.reveal}}}
   :java-source-paths ["src"]
   :repl-options {:init-ns fctorial.main})

@@ -3,7 +3,7 @@
             [parse_struct.common_types :refer :all]
             [fctorial.utils :refer :all]
             [fctorial.data :refer [mb]])
-  (:import ROVec)
+  (:import clojure.lang.ROVec)
   )
 
 (def MULTIBOOT_MAGIC (mapv to-byte [0x1B 0xAD 0xB0 0x02]))

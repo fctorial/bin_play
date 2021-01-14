@@ -39,8 +39,17 @@
 (defn make_header_t [plat_key]
   {:type       :struct
    :definition (subs-prims (get-in arch->prims plat_key)
-                           [[:type (assoc ElfHalf :adapter #(opt-map [:NONE :REL :EXEC :DYN :CORE] (int %)))]
-                            [:machine (assoc ElfHalf :adapter #(opt-map [:NONE :M32 :SPARC :386 :68K :88K :860 :MIPS :MIPS_RS4] (int %)))]
+                           [[:type (assoc ElfHalf :adapter #(opt-map [:ElfType/NONE :ElfType/REL :ElfType/EXEC :ElfType/DYN :ElfType/CORE] (int %)))]
+                            [:machine (assoc ElfHalf :adapter #(opt-map {0  :MachineType/NONE
+                                                                         1  :MachineType/M32
+                                                                         2  :MachineType/SPARC
+                                                                         3  :MachineType/_386
+                                                                         4  :MachineType/_68K
+                                                                         5  :MachineType/_88K
+                                                                         6  :MachineType/_860
+                                                                         7  :MachineType/MIPS
+                                                                         8  :MachineType/MIPS_RS4
+                                                                         62 :MachineType/X86_64} (int %)))]
                             [:version ElfWord]
                             [:entry ElfAddr]
                             [:phoff ElfOff]
@@ -51,14 +60,18 @@
                             [:phnum ElfHalf]
                             [:shentsize ElfHalf]
                             [:shnum ElfHalf]
-                            [:shstrndx ElfHalf]])})
+                            [:shstrndx (assoc ElfHalf :adapter int)]])})
 
 (defn make_secheader_t [plat_key]
   {:type       :struct
    :definition (subs-prims (get-in arch->prims plat_key)
                            [[:name ElfWord]
-                            [:type (assoc ElfWord :adapter #(opt-map [:NULL :PROGBITS :SYMTAB :STRTAB :RELA :HASH :DYNAMIC :NOTE :NOBITS :REL :SHLIB :DYNSYM] %))]
-                            [:flags (assoc ElfXword :adapter to-flags)]
+                            [:type (assoc ElfWord :adapter #(opt-map [:SectionType/NULL :SectionType/PROGBITS :SectionType/SYMTAB :SectionType/STRTAB :SectionType/RELA :SectionType/HASH :SectionType/DYNAMIC :SectionType/NOTE :SectionType/NOBITS :SectionType/REL :SectionType/SHLIB :SectionType/DYNSYM] %))]
+                            [:flags (assoc ElfXword :adapter #(map
+                                                                (partial opt-map {0 :WRITE
+                                                                                  1 :ALLOC
+                                                                                  2 :EXEC})
+                                                                (to-flags %)))]
                             [:addr ElfAddr]
                             [:offset ElfOff]
                             [:size ElfXword]
@@ -75,7 +88,7 @@
                                                               {:binding (opt-map [:LOCAL :GLOBAL :WEAK] (bit-shift-right n 4))
                                                                :type    (opt-map [:NOTYPE :OBJECT :FUNC :SECTION :FILE] (bit-and n 0xf))}))]
                                   (padding 1)
-                                  [:shndx ElfHalf]
+                                  [:shndx (assoc ElfHalf :adapter int)]
                                   [:value ElfAddr]
                                   [:size ElfXword]]
                              :32 [[:name ElfWord]

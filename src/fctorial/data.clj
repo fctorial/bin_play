@@ -1,5 +1,5 @@
 (ns fctorial.data
-  (:import ROVec))
+  (:import clojure.lang.ROVec))
 
 (def mb (ROVec. (.readAllBytes (new java.io.FileInputStream "/home/fctorial/src/fuchsia/fuchsia/out/core.qemu-x64/multiboot.bin"))))
 

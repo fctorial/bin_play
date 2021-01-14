@@ -6,8 +6,8 @@
             [fctorial.utils :refer :all]
             [fctorial.data :refer :all]
             [fctorial.types :refer :all])
-  (:import ROVec
-           clojure.lang.MMap))
+  (:import (clojure.lang ROVec
+                         MMap)))
 
 (defmethod _deserialize :struct
   [{definition :definition} data]
@@ -23,7 +23,6 @@
            [[] data]
            definition)))
 
-
 (defn sech->blob [bs sech]
   (ROVec. bs (sech :offset) (+ (sech :offset)
                                (sech :size))))
@@ -32,10 +31,17 @@
   (if (nil? header)
     (fn [loc])
     (let [blob (sech->blob bs header)]
-     (fn [loc]
-       (new String (byte-array
-                     (take-while #(not= % (byte 0))
-                                 (ROVec. blob loc))))))))
+      (fn [loc]
+        (new String (byte-array
+                      (take-while #(not= % (byte 0))
+                                  (ROVec. blob loc))))))))
+
+(declare header)
+(declare sections)
+(declare symbols)
+
+(defmethod print-method clojure.lang.Atom [_ ^java.io.Writer w]
+  (.write w "#atom"))
 
 (defn parse-elf [bs]
   (let [magic_t {:type       :struct
@@ -46,48 +52,69 @@
                               [:version i8]]}
         magic (into MMap/EMPTY (deserialize magic_t bs))
         _ (if (not= (magic :ident) "ELF")
-            (throw (new IllegalArgumentException "Invalid file")))
+            (throw (new IllegalArgumentException "[DEL]ELF magic not found in the given data")))
         PLATFORM_KEY [(magic :data) (magic :class)]
-        header_t (make_header_t PLATFORM_KEY)
-        HEADER (into magic (deserialize header_t (ROVec. bs 16)))
+
+        HEADER (into magic (deserialize
+                             (make_header_t PLATFORM_KEY)
+                             (ROVec. bs 16)))
 
         secheader_t (make_secheader_t PLATFORM_KEY)
+        _ (if (not= (type-size secheader_t) (HEADER :shentsize))
+            (throw (new IllegalArgumentException (str "section header size in ELF header: " (HEADER :shentsize) "doesn't match header size defined by ELF spec for this architecture: " (type-size secheader_t)))))
         secheaders_raw (deserialize {:type    :array
                                      :len     (HEADER :shnum)
                                      :element (assoc secheader_t
                                                 :adapter #(into MMap/EMPTY %))
                                      :adapter vec}
                                     (ROVec. bs (HEADER :shoff)))
-        secname_reader (make_strtab_reader bs (nth secheaders_raw (HEADER :shstrndx)))
+        secname_reader (make_strtab_reader bs (get secheaders_raw (HEADER :shstrndx)))
+        sec_refs (mapv (fn [_] (atom nil)) secheaders_raw)
         SECTIONS (mapv
-                   (fn [header]
+                   (fn [[header idx]]
                      (-> header
                          (update :name secname_reader)
+                         (update :link (fn [lidx]
+                                         (if (zero? lidx)
+                                           nil
+                                           (fn [] @(sec_refs lidx)))))
                          (assoc :get_blob (fn []
                                             (if (= (header :type) :NOBITS)
                                               nil
-                                              (sech->blob bs header))))))
-                   secheaders_raw)
+                                              (sech->blob bs header))))
+                         (assoc :index idx)))
+                   (zip-colls secheaders_raw (range)))
+        _ (doseq [[ref sec] (zip-colls sec_refs SECTIONS)]
+            (reset! ref sec))
 
-        symname_reader (make_strtab_reader bs (first (filter #(= (% :name) ".strtab")
-                                                             SECTIONS)))
-        sym_sec (first (filter #(= :SYMTAB (% :type)) SECTIONS))
-        symbols_raw (let [sym_sec (first (filter #(= :SYMTAB (% :type)) SECTIONS))]
-                      (deserialize {:type    :array
-                                    :len     (/ (sym_sec :size)
-                                                (sym_sec :entsize))
-                                    :element (assoc (make_sym_t PLATFORM_KEY)
-                                               :adapter #(into MMap/EMPTY %))}
-                                   ((sym_sec :get_blob))))
-        SYMBOLS (mapv
-                  (fn [sym]
-                    (update sym :name symname_reader))
-                  symbols_raw)]
-    {:header HEADER
+        sym_sec_header (first (filter #(= :SectionType/SYMTAB (% :type)) SECTIONS))
+        SYMBOLS (if (nil? sym_sec_header)
+                  []
+                  (let [symbols_raw (deserialize {:type    :array
+                                                  :len     (/ (sym_sec_header :size)
+                                                              (sym_sec_header :entsize))
+                                                  :element (assoc (make_sym_t PLATFORM_KEY)
+                                                             :adapter #(into MMap/EMPTY %))}
+                                                 ((sym_sec_header :get_blob)))
+                        symname_reader (make_strtab_reader bs ((sym_sec_header :link)))]
+                    (mapv
+                      (fn [[sym idx]]
+                        (-> sym
+                            (update :name symname_reader)
+                            (update :shndx (fn [sidx]
+                                             (if (zero? sidx)
+                                               nil
+                                               (fn [] @(sec_refs sidx)))))
+                            (assoc :index idx)))
+                      (zip-colls symbols_raw (range)))))]
+    {:header   HEADER
      :sections SECTIONS
-     :symbols SYMBOLS}
-    SYMBOLS))
-(pprint (parse-elf sm))
+     :symbols  SYMBOLS}
+    (def header HEADER)
+    (def sections SECTIONS)
+    (def symbols SYMBOLS)
+    nil))
+(pprint (parse-elf exec))
 ;
 ;(def prog_header {:type       :struct
 ;                  :definition [[:type ElfWord]

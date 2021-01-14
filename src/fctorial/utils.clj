@@ -1,7 +1,8 @@
 (ns fctorial.utils
   (:require [clojure.core.async :as async :refer [<! >! <!! >!! go-loop chan close!]]
             [clojure.set :refer :all])
-  (:import (clojure.lang BigInt)))
+  (:import (clojure.lang BigInt)
+           (java.lang.reflect Field Modifier)))
 
 (defn zip-colls [& cs]
   (partition (count cs)
@@ -167,7 +168,6 @@
      (for [i (range 64)
            :when (not= 0 (bit-and n (bit-shift-left 1 i)))]
        (+ i off)))))
-(to-flags 1N)
 
 (defn geta [m k]
   (second (first (filter
@@ -188,3 +188,16 @@
 (defn map-vals [f m]
   (into {}
         (map (fn [[k v]] [k (f v)]) m)))
+
+(defn kws-with-ns [ns]
+  (try
+    (let [tf (.getDeclaredField clojure.lang.Keyword "table")]
+      (.setAccessible tf true)
+      (let [table (.get tf nil)]
+        (->> (.keySet table)
+             (filter #(= ns (namespace %)))
+             (map #(.get table %))
+             (map #(.get %)))))
+    (catch Throwable _
+      ())))
+
