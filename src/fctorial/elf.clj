@@ -39,6 +39,7 @@
 (declare header)
 (declare sections)
 (declare symbols)
+(declare segments)
 
 (defmethod print-method clojure.lang.Atom [_ ^java.io.Writer w]
   (.write w "#atom"))
@@ -78,10 +79,10 @@
                                          (if (zero? lidx)
                                            nil
                                            (fn [] @(sec_refs lidx)))))
-                         (assoc :get_blob (fn []
-                                            (if (= (header :type) :NOBITS)
-                                              nil
-                                              (sech->blob bs header))))
+                         (assoc :blob (fn []
+                                        (if (= (header :type) :NOBITS)
+                                          nil
+                                          (sech->blob bs header))))
                          (assoc :index idx)))
                    (zip-colls secheaders_raw (range)))
         _ (doseq [[ref sec] (zip-colls sec_refs SECTIONS)]
@@ -95,7 +96,7 @@
                                                               (sym_sec_header :entsize))
                                                   :element (assoc (make_sym_t PLATFORM_KEY)
                                                              :adapter #(into MMap/EMPTY %))}
-                                                 ((sym_sec_header :get_blob)))
+                                                 ((sym_sec_header :blob)))
                         symname_reader (make_strtab_reader bs ((sym_sec_header :link)))]
                     (mapv
                       (fn [[sym idx]]
@@ -106,13 +107,26 @@
                                                nil
                                                (fn [] @(sec_refs sidx)))))
                             (assoc :index idx)))
-                      (zip-colls symbols_raw (range)))))]
-    {:header   HEADER
+                      (zip-colls symbols_raw (range)))))
+
+        SEGMENTS (if (zero? (HEADER :shoff))
+                   []
+                   (let [phdr_t (make_phdr_t PLATFORM_KEY)]
+                     (deserialize
+                       {:type    :array
+                        :len     (HEADER :phnum)
+                        :element (assoc phdr_t
+                                   :adapter #(let [seg (into MMap/EMPTY %)]
+                                               (assoc seg :blob (fn [] (ROVec. bs (seg :offset) (seg :filesz))))))
+                        :adapter vec}
+                       (ROVec. bs (HEADER :phoff)))))]
+    #_{:header   HEADER
      :sections SECTIONS
      :symbols  SYMBOLS}
     (def header HEADER)
     (def sections SECTIONS)
     (def symbols SYMBOLS)
+    (def segments SEGMENTS)
     nil))
 (pprint (parse-elf exec))
 ;

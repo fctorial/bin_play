@@ -66,7 +66,18 @@
   {:type       :struct
    :definition (subs-prims (get-in arch->prims plat_key)
                            [[:name ElfWord]
-                            [:type (assoc ElfWord :adapter #(opt-map [:SectionType/NULL :SectionType/PROGBITS :SectionType/SYMTAB :SectionType/STRTAB :SectionType/RELA :SectionType/HASH :SectionType/DYNAMIC :SectionType/NOTE :SectionType/NOBITS :SectionType/REL :SectionType/SHLIB :SectionType/DYNSYM] %))]
+                            [:type (assoc ElfWord :adapter (partial opt-map [:SectionType/NULL
+                                                                             :SectionType/PROGBITS
+                                                                             :SectionType/SYMTAB
+                                                                             :SectionType/STRTAB
+                                                                             :SectionType/RELA
+                                                                             :SectionType/HASH
+                                                                             :SectionType/DYNAMIC
+                                                                             :SectionType/NOTE
+                                                                             :SectionType/NOBITS
+                                                                             :SectionType/REL
+                                                                             :SectionType/SHLIB
+                                                                             :SectionType/DYNSYM]))]
                             [:flags (assoc ElfXword :adapter #(map
                                                                 (partial opt-map {0 :WRITE
                                                                                   1 :ALLOC
@@ -99,4 +110,29 @@
                                                                :type    (opt-map [:NOTYPE :OBJECT :FUNC :SECTION :FILE] (bit-and n 0xf))}))]
                                   (padding 1)
                                   [:shndx ElfHalf]]}
+                            (plat_key 1)))})
+
+(defn make_phdr_t [plat_key]
+  {:type       :struct
+   :definition (subs-prims (get-in arch->prims plat_key)
+                           ({:64 [[:type (assoc ElfWord :adapter (partial opt-map [:NULL :LOAD :DYNAMIC :INTERP :NOTE :SHLIB :PHDR]))]
+                                  [:flags (assoc ElfWord :adapter #(map
+                                                                     [:X :W :R]
+                                                                     (to-flags %)))]
+                                  [:offset ElfOff]
+                                  [:vaddr ElfAddr]
+                                  [:paddr ElfAddr]
+                                  [:filesz ElfXword]
+                                  [:memsz ElfXword]
+                                  [:align ElfXword]]
+                             :32 [[:type (assoc ElfWord :adapter (partial opt-map [:NULL :LOAD :DYNAMIC :INTERP :NOTE :SHLIB :PHDR]))]
+                                  [:offset ElfOff]
+                                  [:vaddr ElfAddr]
+                                  [:paddr ElfAddr]
+                                  [:filesz ElfXword]
+                                  [:memsz ElfXword]
+                                  [:flags (assoc ElfWord :adapter #(map
+                                                                     [:X :W :R]
+                                                                     (to-flags %)))]
+                                  [:align ElfXword]]}
                             (plat_key 1)))})
