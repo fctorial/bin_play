@@ -117,7 +117,8 @@
                         :len     (HEADER :phnum)
                         :element (assoc phdr_t
                                    :adapter #(let [seg (into MMap/EMPTY %)]
-                                               (assoc seg :blob (fn [] (ROVec. bs (seg :offset) (seg :filesz))))))
+                                               (assoc seg :blob (fn [] (ROVec. bs (seg :offset) (+ (seg :offset)
+                                                                                                   (seg :filesz)))))))
                         :adapter vec}
                        (ROVec. bs (HEADER :phoff)))))]
     #_{:header   HEADER
