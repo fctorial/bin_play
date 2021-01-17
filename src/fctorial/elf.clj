@@ -6,22 +6,7 @@
             [fctorial.utils :refer :all]
             [fctorial.data :refer :all]
             [fctorial.types :refer :all])
-  (:import (clojure.lang ROVec
-                         MMap)))
-
-(defmethod _deserialize :struct
-  [{definition :definition} data]
-  (first (reduce
-           (fn [[res data_left] [name spec]]
-             (let [size (type-size spec)
-                   [curr_chunk next_data_left] (split-n size data_left)
-                   val (deserialize spec curr_chunk)]
-               [(if (= (spec :type) :padding)
-                  res
-                  (conj res [name val]))
-                next_data_left]))
-           [[] data]
-           definition)))
+  (:import (clojure.lang ROVec MMap)))
 
 (defn sech->blob [bs sech]
   (ROVec. bs (sech :offset) (+ (sech :offset)
@@ -129,7 +114,7 @@
     (def symbols SYMBOLS)
     (def segments SEGMENTS)
     nil))
-(pprint (parse-elf exec))
+(pprint (parse-elf ze))
 ;
 ;(def prog_header {:type       :struct
 ;                  :definition [[:type ElfWord]

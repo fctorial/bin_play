@@ -4,7 +4,7 @@
             [parse_struct.deserialize :refer [_deserialize]]
             [fctorial.utils :refer :all]
             [fctorial.data :refer :all])
-  (:import clojure.lang.ROVec))
+  (:import (clojure.lang MMap ROVec)))
 
 (def ZBI_TYPES {0x544f4f42 :ZBI_TYPE_CONTAINER
                 0x004e524b :ZBI_TYPE_KERNEL_PREFIX
@@ -56,7 +56,8 @@
                                 ;[:reserved0 uint32_t]
                                 ;[:reserved1 uint32_t]
                                 [:magic (assoc uint32_t :adapter #(format "0x%08x" (long %)))]
-                                [:crc32 uint32_t]]})
+                                [:crc32 uint32_t]]
+                   :adapter #(into MMap/EMPTY %)})
 
 (def zbi_coll_header (deserialize zbi_header_t zbi))
 
