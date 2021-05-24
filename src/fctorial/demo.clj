@@ -91,6 +91,9 @@
                            :element sym_t}
                           (ROVec. obj (symtab_header :offset))))
 
+(defn -main []
+  (clojure.pprint/pprint symbols))
+
 (def spec {:type    :array
            :len     20
            :element i32be})
