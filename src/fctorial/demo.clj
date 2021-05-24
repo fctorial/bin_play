@@ -85,8 +85,20 @@
                          [:value ElfAddr]
                          [:size ElfXword]]})
 
-(def symbols (deserialize {:type :array
-                           :len (/ (symtab_header :size)
-                                   (type-size sym_t))
+(def symbols (deserialize {:type    :array
+                           :len     (/ (symtab_header :size)
+                                       (type-size sym_t))
                            :element sym_t}
                           (ROVec. obj (symtab_header :offset))))
+
+(def spec {:type    :array
+           :len     20
+           :element i32be})
+
+(def data1 (range 20))
+
+(def bs (serialize spec data1))
+
+(def data2 (deserialize spec bs))
+
+(assert (= data1 data2))
