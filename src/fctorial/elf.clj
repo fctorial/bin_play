@@ -114,7 +114,7 @@
     (def symbols SYMBOLS)
     (def segments SEGMENTS)
     nil))
-(pprint (parse-elf ze))
+(pprint (parse-elf exec))
 ;
 ;(def prog_header {:type       :struct
 ;                  :definition [[:type ElfWord]
