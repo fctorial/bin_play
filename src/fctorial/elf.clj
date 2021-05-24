@@ -106,15 +106,15 @@
                                                                                                    (seg :filesz)))))))
                         :adapter vec}
                        (ROVec. bs (HEADER :phoff)))))]
-    #_{:header   HEADER
-     :sections SECTIONS
-     :symbols  SYMBOLS}
     (def header HEADER)
     (def sections SECTIONS)
     (def symbols SYMBOLS)
     (def segments SEGMENTS)
-    nil))
-(pprint (parse-elf exec))
+    {:header   HEADER
+     :sections SECTIONS
+     :symbols  SYMBOLS
+     :segments SEGMENTS}))
+(def result (parse-elf exec))
 ;
 ;(def prog_header {:type       :struct
 ;                  :definition [[:type ElfWord]
